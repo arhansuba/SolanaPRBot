@@ -1,0 +1,13 @@
+# Discord
+discord.py==2.3.2
+# AI
+groq==0.13.0
+assister-sdk==1.0.0
+# GitHub
+PyGithub==2.1.1
+# Blockchain
+crossmint-sdk==1.0.0
+jupiter-sdk==1.0.0
+# Utils
+python-dotenv==1.0.0
+aiohttp==3.9.1
