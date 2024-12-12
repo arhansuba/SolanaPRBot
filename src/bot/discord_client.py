@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime
 
 from ai.groq_client import GroqClient
-from github.client import GitHubClient
+from github import GitHubClient
 from blockchain.crossmint.wallet import WalletManager
 from blockchain.jupiter.swaps import SwapManager
 

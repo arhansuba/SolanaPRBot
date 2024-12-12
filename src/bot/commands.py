@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from ai.groq_client import GroqClient
-from github.client import GitHubClient
+from github import Github as GitHubClient
 from blockchain.crossmint.wallet import WalletManager
 from blockchain.jupiter.swaps import SwapManager
 from dao.governance import GovernanceManager

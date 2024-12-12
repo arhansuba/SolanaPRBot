@@ -7,12 +7,29 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
+# Import Config
 from config import AppConfig
-from bot.discord_client import DiscordClient
+
+# Import AI Components
 from ai.groq_client import GroqClient
-from github.client import GitHubClient
+from ai.code_analyzer import CodeAnalyzer
+from ai.doc_generator import DocGenerator
+
+# Import Bot Components
+from bot.discord_client import DiscordClient
+from bot.commands import register_commands
+from bot.events import register_events
+
+# Import Blockchain Components
 from blockchain.crossmint.wallet import WalletManager
 from blockchain.jupiter.swaps import SwapManager
+
+# Import DAO Components
+from dao.governance import GovernanceManager
+from dao.token import TokenManager
+
+# Import GitHub Client
+from github import GitHubClient
 
 # Set up logging
 logging.basicConfig(
@@ -27,12 +44,27 @@ logger = logging.getLogger(__name__)
 
 class GithubDAOBot:
     def __init__(self):
+        # Config
         self.config: Optional[AppConfig] = None
-        self.discord_client: Optional[DiscordClient] = None
+        
+        # AI Components
         self.groq_client: Optional[GroqClient] = None
+        self.code_analyzer: Optional[CodeAnalyzer] = None
+        self.doc_generator: Optional[DocGenerator] = None
+        
+        # Bot Components
+        self.discord_client: Optional[DiscordClient] = None
+        
+        # GitHub Client
         self.github_client: Optional[GitHubClient] = None
+        
+        # Blockchain Components
         self.wallet_manager: Optional[WalletManager] = None
         self.swap_manager: Optional[SwapManager] = None
+        
+        # DAO Components
+        self.governance_manager: Optional[GovernanceManager] = None
+        self.token_manager: Optional[TokenManager] = None
 
     async def initialize(self):
         """Initialize all components of the application."""
@@ -41,12 +73,14 @@ class GithubDAOBot:
             logger.info("Loading configuration...")
             self.config = AppConfig.load()
 
-            # Initialize AI client
-            logger.info("Initializing AI client...")
+            # Initialize AI components
+            logger.info("Initializing AI components...")
             self.groq_client = GroqClient(
                 api_key=self.config.ai.groq_api_key,
                 model_name=self.config.ai.model_name
             )
+            self.code_analyzer = CodeAnalyzer(self.groq_client)
+            self.doc_generator = DocGenerator(self.groq_client)
 
             # Initialize GitHub client
             logger.info("Initializing GitHub client...")
@@ -66,16 +100,35 @@ class GithubDAOBot:
                 rpc_url=self.config.blockchain.rpc_url
             )
 
+            # Initialize DAO components
+            logger.info("Initializing DAO components...")
+            self.governance_manager = GovernanceManager(
+                wallet_manager=self.wallet_manager,
+                config=self.config.dao
+            )
+            self.token_manager = TokenManager(
+                wallet_manager=self.wallet_manager,
+                config=self.config.dao
+            )
+
             # Initialize Discord client
             logger.info("Initializing Discord client...")
             self.discord_client = DiscordClient(
                 token=self.config.discord.token,
                 command_prefix=self.config.discord.command_prefix,
                 ai_client=self.groq_client,
+                code_analyzer=self.code_analyzer,
+                doc_generator=self.doc_generator,
                 github_client=self.github_client,
                 wallet_manager=self.wallet_manager,
-                swap_manager=self.swap_manager
+                swap_manager=self.swap_manager,
+                governance_manager=self.governance_manager,
+                token_manager=self.token_manager
             )
+
+            # Register commands and events
+            register_commands(self.discord_client)
+            register_events(self.discord_client)
 
             # Set up error handlers
             self.setup_error_handlers()
@@ -115,9 +168,26 @@ class GithubDAOBot:
     async def cleanup(self):
         """Clean up resources before shutdown."""
         try:
+            # Cleanup Discord client
             if self.discord_client:
                 await self.discord_client.close()
-            # Add any other cleanup needed
+            
+            # Cleanup blockchain components
+            if self.wallet_manager:
+                await self.wallet_manager.cleanup()
+            if self.swap_manager:
+                await self.swap_manager.cleanup()
+            
+            # Cleanup AI components
+            if self.groq_client:
+                await self.groq_client.cleanup()
+            
+            # Cleanup DAO components
+            if self.governance_manager:
+                await self.governance_manager.cleanup()
+            if self.token_manager:
+                await self.token_manager.cleanup()
+                
             logger.info("Cleanup completed successfully")
         except Exception as e:
             logger.error(f"Error during cleanup: {str(e)}")
