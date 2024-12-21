@@ -244,6 +244,15 @@ class GroqClient:
             logger.error(f"Error generating documentation: {str(e)}")
             raise
 
+    async def some_method(self):
+        try:
+            # Example code to execute
+            await asyncio.sleep(1)
+        except (aiohttp.ClientError, AttributeError) as e:
+            logger.error(f"An error occurred: {e}")
+            # Handle the exception appropriately
+            print(f"An error occurred: {e}")
+
     def clear_cache(self):
         """Clear the response cache."""
         self._response_cache.clear()
